@@ -113,8 +113,7 @@ def main(args):
                     stopping_criteria=[stopping_criteria])
 
             outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
-            print(filename)
-            with open(f'/scratch/yerong/self-instruct/pipe/img/{filename.split(".")[0]}_{key}.txt', 'w') as file:
+            with open(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
                 file.write(prompt)
                 file.write(outputs)
             conv.messages[-1][-1] = outputs

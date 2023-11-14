@@ -125,8 +125,8 @@ def main(args):
 
                 if args.debug:
                     print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
-            except:
-                continue
+        except:
+            continue
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

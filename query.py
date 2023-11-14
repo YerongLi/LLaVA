@@ -68,7 +68,7 @@ def main(args):
             inp = ""
         if not inp:
             print("exit...")
-            break
+            # break
 
         print(f"{roles[1]}: ", end="")
 

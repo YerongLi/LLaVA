@@ -59,9 +59,11 @@ def main(args):
     else:
         image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
-    while True:
+    # while True:
         try:
-            inp = input(f"{roles[0]}: ")
+            inp = """You are an speech-language pathologist (SLP) and you are experienced in training kids with speech and language delay. Now you need to analyze a video frame where a SLP teaches a group of kids by applying the “Applied Behavioral Analysis (ABA)” method. You will detect if the children (circled) in this frame demonstrate any types of the four behaviors introduced below.
+1. Attention Seeking: Attention-seeking behavior occurs when someone desires feedback or a response from another person. Crying and throwing tantrums are great examples of childhood attention-seeking habits. Attention seekers may settle for any type of attention, whether positive or negative. Examples of attention include: Praise, such as cheering and words of affirmation; Scolding, saying no, or moving a child’s hand away; Redirecting your attention to your child; or Showing disappointment or frustration with facial expressions and body language."""
+            # inp = input(f"{roles[0]}: ")
         except EOFError:
             inp = ""
         if not inp:
@@ -102,6 +104,8 @@ def main(args):
                 stopping_criteria=[stopping_criteria])
 
         outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+        with open('result.txt', 'w') as file:
+            file.write(outputs)
         conv.messages[-1][-1] = outputs
 
         if args.debug:

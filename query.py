@@ -78,7 +78,9 @@ def main(args):
                 image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
             for key, inp in prompt_dict.items():
-                if os.path.exists(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt'): continue
+                if os.path.exists(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt'): 
+                    print(key, 'skipped')
+                    continue
 
 
                 print(f"{roles[1]}: ", end="")

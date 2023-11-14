@@ -64,6 +64,7 @@ def main(args):
     }
     # Iterate over each file in the folder
     for file_name in file_list:
+        if file_name[-1] == 't': continue
         # Construct the full path to the image file
         image_path = os.path.join(folder, file_name)        
         image = load_image(image_path)
@@ -113,6 +114,8 @@ def main(args):
                     stopping_criteria=[stopping_criteria])
 
             outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+            if os.path.exists(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt'): continue
+
             with open(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
                 file.write(prompt)
                 file.write(outputs)

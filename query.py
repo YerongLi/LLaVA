@@ -110,7 +110,8 @@ def main(args):
                 stopping_criteria=[stopping_criteria])
 
         outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
-        with open(f'{filename.split('.')[0]}_{key}.txt', 'w') as file:
+        print(filename)
+        with open(f'{filename.split(".")[0]}_{key}.txt', 'w') as file:
             file.write(prompt)
             file.write(outputs)
         conv.messages[-1][-1] = outputs

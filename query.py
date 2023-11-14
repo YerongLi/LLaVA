@@ -64,6 +64,11 @@ def main(args):
     }
     # Iterate over each file in the folder
     for file_name in file_list:
+        conv = conv_templates[args.conv_mode].copy()
+        if "mpt" in model_name.lower():
+            roles = ('user', 'assistant')
+        else:
+            roles = conv.roles
         if file_name[-1] == 't': continue
         print(file_name)
         try:
@@ -120,6 +125,7 @@ def main(args):
 
                 with open(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
                     file.write(prompt)
+                    file.write('===================')
                     file.write(outputs)
                 conv.messages[-1][-1] = outputs
 

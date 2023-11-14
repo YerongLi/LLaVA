@@ -65,6 +65,7 @@ def main(args):
     # Iterate over each file in the folder
     for file_name in file_list:
         if file_name[-1] == 't': continue
+        print(file_name)
         # Construct the full path to the image file
         image_path = os.path.join(folder, file_name)        
         image = load_image(image_path)

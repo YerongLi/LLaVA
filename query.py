@@ -125,7 +125,7 @@ def main(args):
 
                 with open(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
                     file.write(prompt)
-                    file.write('===================')
+                    file.write('\n===================\n')
                     file.write(outputs)
                 conv.messages[-1][-1] = outputs
 

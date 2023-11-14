@@ -66,65 +66,67 @@ def main(args):
     for file_name in file_list:
         if file_name[-1] == 't': continue
         print(file_name)
-        # Construct the full path to the image file
-        image_path = os.path.join(folder, file_name)        
-        image = load_image(image_path)
-        # Similar operation in model_worker.py
-        image_tensor = process_images([image], image_processor, model.config)
-        if type(image_tensor) is list:
-            image_tensor = [image.to(model.device, dtype=torch.float16) for image in image_tensor]
-        else:
-            image_tensor = image_tensor.to(model.device, dtype=torch.float16)
-
-        for key, inp in prompt_dict.items():
-            if not inp:
-                print("exit...")
-                # break
-
-            print(f"{roles[1]}: ", end="")
-
-            if image is not None:
-                # first message
-                if model.config.mm_use_im_start_end:
-                    inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
-                else:
-                    inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
-                conv.append_message(conv.roles[0], inp)
-                image = None
+        try:
+            # Construct the full path to the image file
+            image_path = os.path.join(folder, file_name)        
+            image = load_image(image_path)
+            # Similar operation in model_worker.py
+            image_tensor = process_images([image], image_processor, model.config)
+            if type(image_tensor) is list:
+                image_tensor = [image.to(model.device, dtype=torch.float16) for image in image_tensor]
             else:
-                # later messages
-                conv.append_message(conv.roles[0], inp)
-            conv.append_message(conv.roles[1], None)
-            prompt = conv.get_prompt()
+                image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
-            input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(model.device)
-            stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
-            keywords = [stop_str]
-            stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
-            streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+            for key, inp in prompt_dict.items():
+                if not inp:
+                    print("exit...")
+                    # break
 
-            with torch.inference_mode():
-                output_ids = model.generate(
-                    input_ids,
-                    images=image_tensor,
-                    do_sample=True if args.temperature > 0 else False,
-                    temperature=args.temperature,
-                    max_new_tokens=args.max_new_tokens,
-                    streamer=streamer,
-                    use_cache=True,
-                    stopping_criteria=[stopping_criteria])
+                print(f"{roles[1]}: ", end="")
 
-            outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
-            if os.path.exists(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt'): continue
+                if image is not None:
+                    # first message
+                    if model.config.mm_use_im_start_end:
+                        inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
+                    else:
+                        inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
+                    conv.append_message(conv.roles[0], inp)
+                    image = None
+                else:
+                    # later messages
+                    conv.append_message(conv.roles[0], inp)
+                conv.append_message(conv.roles[1], None)
+                prompt = conv.get_prompt()
 
-            with open(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
-                file.write(prompt)
-                file.write(outputs)
-            conv.messages[-1][-1] = outputs
+                input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(model.device)
+                stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+                keywords = [stop_str]
+                stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+                streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
 
-            if args.debug:
-                print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
+                with torch.inference_mode():
+                    output_ids = model.generate(
+                        input_ids,
+                        images=image_tensor,
+                        do_sample=True if args.temperature > 0 else False,
+                        temperature=args.temperature,
+                        max_new_tokens=args.max_new_tokens,
+                        streamer=streamer,
+                        use_cache=True,
+                        stopping_criteria=[stopping_criteria])
 
+                outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+                if os.path.exists(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt'): continue
+
+                with open(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
+                    file.write(prompt)
+                    file.write(outputs)
+                conv.messages[-1][-1] = outputs
+
+                if args.debug:
+                    print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
+            except:
+                continue
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

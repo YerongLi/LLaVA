@@ -52,7 +52,16 @@ def main(args):
         roles = conv.roles
     folder='/scratch/yerong/self-instruct/pipe/img'
     file_list = os.listdir(folder)
-
+    prompt_dict = {
+    'attention':"""You are an speech-language pathologist (SLP) and you are experienced in training kids with speech and language delay. Now you need to analyze a video frame where a SLP teaches a group of kids by applying the “Applied Behavioral Analysis (ABA)” method. You will detect if the children (circled) in this frame demonstrate any types of the four behaviors introduced below.
+    Attention Seeking: Attention-seeking behavior occurs when someone desires feedback or a response from another person. Crying and throwing tantrums are great examples of childhood attention-seeking habits. Attention seekers may settle for any type of attention, whether positive or negative. Examples of attention include: Praise, such as cheering and words of affirmation; Scolding, saying no, or moving a child’s hand away; Redirecting your attention to your child; or Showing disappointment or frustration with facial expressions and body language.""",
+    'escape':"""You are an speech-language pathologist (SLP) and you are experienced in training kids with speech and language delay. Now you need to analyze a video frame where a SLP teaches a group of kids by applying the “Applied Behavioral Analysis (ABA)” method. You will detect if the children (circled) in this frame demonstrate any types of the four behaviors introduced below.
+    Escape or avoidance: Escape behaviors typically occur when a learner wants to avoid or “escape” doing something. This is common in ABA therapy session instructional periods.  For example, if a child does not want to complete a puzzle or read a book, she or he may run away from the therapist to avoid the instructional activity.""",
+    'tangibles':"""You are an speech-language pathologist (SLP) and you are experienced in training kids with speech and language delay. Now you need to analyze a video frame where a SLP teaches a group of kids by applying the “Applied Behavioral Analysis (ABA)” method. You will detect if the children (circled) in this frame demonstrate any types of the four behaviors introduced below.
+    Access to tangibles or reinforcements: Access to tangibles is somewhat self-explanatory, but it is also very important. Children may engage in certain behaviors because they are looking to gain access to something. For example, wanting a cookie. Keep in mind that access-related behaviors occur surrounding items the child can’t access independently. When trying to access a tangible reward, a child may: Beg, Scream, cry, or throw a tantrum, Hit or bite, Grab the item away from someone else.""",
+    'sensory':"""You are an speech-language pathologist (SLP) and you are experienced in training kids with speech and language delay. Now you need to analyze a video frame where a SLP teaches a group of kids by applying the “Applied Behavioral Analysis (ABA)” method. You will detect if the children (circled) in this frame demonstrate any types of the four behaviors introduced below.
+    Sensory needs: Sensory stimulation (also known as sensory needs) occurs when children want to experience a pleasant sensation or replace discomfort. Children may also seek stimulation to sensitize or desensitize, depending on their sensory needs. Sensory stimulation can manifest itself in several ways, such as: Jumping, Skipping, Hand-flapping, Tapping feet, Rocking back and forth.""",
+    }
     # Iterate over each file in the folder
     for file_name in file_list:
         # Construct the full path to the image file
@@ -65,59 +74,53 @@ def main(args):
         else:
             image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
-        try:
-            key = 'attention'
-            inp = """You are an speech-language pathologist (SLP) and you are experienced in training kids with speech and language delay. Now you need to analyze a video frame where a SLP teaches a group of kids by applying the “Applied Behavioral Analysis (ABA)” method. You will detect if the children (circled) in this frame demonstrate any types of the four behaviors introduced below.
-    1. Attention Seeking: Attention-seeking behavior occurs when someone desires feedback or a response from another person. Crying and throwing tantrums are great examples of childhood attention-seeking habits. Attention seekers may settle for any type of attention, whether positive or negative. Examples of attention include: Praise, such as cheering and words of affirmation; Scolding, saying no, or moving a child’s hand away; Redirecting your attention to your child; or Showing disappointment or frustration with facial expressions and body language."""
-            # inp = input(f"{roles[0]}: ")
-        except EOFError:
-            inp = ""
-        if not inp:
-            print("exit...")
-            # break
+        for key, inp in prompt_dict.items():
+            if not inp:
+                print("exit...")
+                # break
 
-        print(f"{roles[1]}: ", end="")
+            print(f"{roles[1]}: ", end="")
 
-        if image is not None:
-            # first message
-            if model.config.mm_use_im_start_end:
-                inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
+            if image is not None:
+                # first message
+                if model.config.mm_use_im_start_end:
+                    inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
+                else:
+                    inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
+                conv.append_message(conv.roles[0], inp)
+                image = None
             else:
-                inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
-            conv.append_message(conv.roles[0], inp)
-            image = None
-        else:
-            # later messages
-            conv.append_message(conv.roles[0], inp)
-        conv.append_message(conv.roles[1], None)
-        prompt = conv.get_prompt()
+                # later messages
+                conv.append_message(conv.roles[0], inp)
+            conv.append_message(conv.roles[1], None)
+            prompt = conv.get_prompt()
 
-        input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(model.device)
-        stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
-        keywords = [stop_str]
-        stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
-        streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+            input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).to(model.device)
+            stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+            keywords = [stop_str]
+            stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+            streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
 
-        with torch.inference_mode():
-            output_ids = model.generate(
-                input_ids,
-                images=image_tensor,
-                do_sample=True if args.temperature > 0 else False,
-                temperature=args.temperature,
-                max_new_tokens=args.max_new_tokens,
-                streamer=streamer,
-                use_cache=True,
-                stopping_criteria=[stopping_criteria])
+            with torch.inference_mode():
+                output_ids = model.generate(
+                    input_ids,
+                    images=image_tensor,
+                    do_sample=True if args.temperature > 0 else False,
+                    temperature=args.temperature,
+                    max_new_tokens=args.max_new_tokens,
+                    streamer=streamer,
+                    use_cache=True,
+                    stopping_criteria=[stopping_criteria])
 
-        outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
-        print(filename)
-        with open(f'{filename.split(".")[0]}_{key}.txt', 'w') as file:
-            file.write(prompt)
-            file.write(outputs)
-        conv.messages[-1][-1] = outputs
+            outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+            print(filename)
+            with open(f'{filename.split(".")[0]}_{key}.txt', 'w') as file:
+                file.write(prompt)
+                file.write(outputs)
+            conv.messages[-1][-1] = outputs
 
-        if args.debug:
-            print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
+            if args.debug:
+                print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
 
 
 if __name__ == "__main__":

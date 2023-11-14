@@ -78,9 +78,8 @@ def main(args):
                 image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
             for key, inp in prompt_dict.items():
-                if not inp:
-                    print("exit...")
-                    # break
+                if os.path.exists(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt'): continue
+
 
                 print(f"{roles[1]}: ", end="")
 
@@ -116,7 +115,6 @@ def main(args):
                         stopping_criteria=[stopping_criteria])
 
                 outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
-                if os.path.exists(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt'): continue
 
                 with open(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
                     file.write(prompt)

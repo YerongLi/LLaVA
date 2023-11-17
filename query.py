@@ -124,7 +124,7 @@ def main(args):
 
                 outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
 
-                with open(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
+                with open(f'{folder}/{file_name.split(".")[0]}_{key}.txt', 'w') as file:
                     file.write(prompt)
                     file.write('\n===================\n')
                     file.write(outputs)

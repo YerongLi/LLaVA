@@ -27,7 +27,7 @@ def load_image(image_file):
 def main(args):
     # Model
     disable_torch_init()
-
+    print(args.folder)
     model_name = get_model_name_from_path(args.model_path)
     tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, args.model_base, model_name, args.load_8bit, args.load_4bit, device=args.device)
 
@@ -50,7 +50,7 @@ def main(args):
         roles = ('user', 'assistant')
     else:
         roles = conv.roles
-    folder='/scratch/yerong/self-instruct/pipe/img'
+    folder=args.folder
     file_list = os.listdir(folder)
     prompt_dict = {
     'attention':"""You are an speech-language pathologist (SLP) and you are experienced in training kids with speech and language delay. Now you need to analyze a video frame where a SLP teaches a group of kids by applying the “Applied Behavioral Analysis (ABA)” method. You will detect if the children (circled) in this frame demonstrate any types of the behavior introduced below.
@@ -84,7 +84,7 @@ def main(args):
                     roles = ('user', 'assistant')
                 else:
                     roles = conv.roles
-                if os.path.exists(f'/scratch/yerong/self-instruct/pipe/img/{file_name.split(".")[0]}_{key}.txt'): 
+                if os.path.exists(f'{folder}{file_name.split(".")[0]}_{key}.txt'): 
                     print(key, 'skipped')
                     continue
 
@@ -147,5 +147,7 @@ if __name__ == "__main__":
     parser.add_argument("--load-8bit", action="store_true")
     parser.add_argument("--load-4bit", action="store_true")
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--folder", type=str, default="/scratch/yerong/self-instruct/pipe/img")  # New argument for folder directory
+
     args = parser.parse_args()
     main(args)
